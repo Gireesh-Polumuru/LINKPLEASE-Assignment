@@ -8,18 +8,20 @@ from app.config import settings
 from app.database import init_db
 
 
-from app.workers import dm_worker
+from app.workers import dm_worker, reconciliation_worker
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for startup and shutdown routines."""
-    # Startup: initialize database schemas and background dispatch worker
+    # Startup: initialize database schemas and background dispatch & reconciliation workers
     await init_db()
     dm_worker.start()
+    reconciliation_worker.start()
     yield
     # Shutdown: clean up background workers/resources if active
     await dm_worker.stop()
+    await reconciliation_worker.stop()
 
 
 app = FastAPI(

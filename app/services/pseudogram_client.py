@@ -207,9 +207,19 @@ class PseudoGramClient:
                 return response.json()
             except Exception:
                 return {"dm_id": dm_id, "status": "unknown"}
-        elif response.status_code == 400:
-            raise PseudoGramBadRequestError(detail=response.text)
+        elif response.status_code in (400, 404):
+            try:
+                err_data = response.json()
+                detail = err_data.get("detail", err_data.get("error", response.text))
+            except Exception:
+                detail = response.text
+            raise PseudoGramBadRequestError(detail=detail)
         elif response.status_code == 429:
-            raise PseudoGramRateLimitError(retry_after=5.0, detail="Rate limited")
+            retry_after = 5.0
+            try:
+                retry_after = float(response.headers.get("Retry-After", 5.0))
+            except Exception:
+                pass
+            raise PseudoGramRateLimitError(retry_after=retry_after, detail="Rate limited")
         else:
             raise PseudoGramServerError(status_code=response.status_code, detail=response.text)
