@@ -53,7 +53,13 @@ async def handle_webhook(
                 break
 
         if not valid:
-            logger.warning("Rejecting webhook request: Invalid or missing X-PseudoGram-Signature.")
+            logger.warning(
+                "Rejecting webhook request: Invalid or missing X-PseudoGram-Signature. "
+                "Received sig_header=%r, available_secrets=%s, headers=%s",
+                sig_header,
+                bool(settings.PSEUDOGRAM_API_KEY or settings.WEBHOOK_SECRET),
+                dict(request.headers),
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or missing webhook signature.",
