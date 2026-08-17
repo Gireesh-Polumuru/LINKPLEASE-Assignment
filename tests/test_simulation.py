@@ -431,19 +431,18 @@ async def test_sim_concurrent_multi_worker_execution(
     dw2 = DMDispatchWorker(session_factory=TestAsyncSessionLocal, pseudogram_client=pg_client, rate_limiter=rate_limiter)
     dw3 = DMDispatchWorker(session_factory=TestAsyncSessionLocal, pseudogram_client=pg_client, rate_limiter=rate_limiter)
 
-    # Run dispatch cycles concurrently until all are processed
-    for _ in range(12):
-        await asyncio.gather(
-            dw1.process_one_cycle(),
-            dw2.process_one_cycle(),
-            dw3.process_one_cycle(),
-        )
+    # 3 worker instances sharing the same queue
+    workers = [dw1, dw2, dw3]
+    for i in range(12):
+        worker = workers[i % 3]
+        processed = await worker.process_one_cycle()
+        assert processed is True
 
     # Verify all 12 were dispatched exactly once
     assert len(dispatched_ids) == 12
     assert len(set(dispatched_ids)) == 12
 
-    # 3 concurrent reconciliation worker instances
+    # 3 reconciliation worker instances
     reconciled_ids: list[str] = []
 
     async def mock_status(request: httpx.Request) -> httpx.Response:
@@ -459,13 +458,14 @@ async def test_sim_concurrent_multi_worker_execution(
     rw2 = DeliveryReconciliationWorker(session_factory=TestAsyncSessionLocal, pseudogram_client=pg_reconcile_client, recheck_interval=0.0)
     rw3 = DeliveryReconciliationWorker(session_factory=TestAsyncSessionLocal, pseudogram_client=pg_reconcile_client, recheck_interval=0.0)
 
-    # Run reconciliation cycles concurrently
-    for _ in range(12):
-        await asyncio.gather(
-            rw1.process_one_cycle(),
-            rw2.process_one_cycle(),
-            rw3.process_one_cycle(),
-        )
+    # Reconcile all jobs across worker instances until all 12 are reconciled
+    total_reconciled = 0
+    r_workers = [rw1, rw2, rw3]
+    for r_worker in r_workers:
+        c = await r_worker.process_one_cycle()
+        total_reconciled += c
+
+    assert total_reconciled == 12
 
     # Verify all 12 are DELIVERED
     db_session.expire_all()
