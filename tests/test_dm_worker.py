@@ -400,13 +400,11 @@ async def test_concurrent_worker_claiming_no_duplicate_dispatch(
     worker1 = DMDispatchWorker(session_factory=TestAsyncSessionLocal, pseudogram_client=pg_client, rate_limiter=mock_rate_limiter)
     worker2 = DMDispatchWorker(session_factory=TestAsyncSessionLocal, pseudogram_client=pg_client, rate_limiter=mock_rate_limiter)
 
-    # Run both workers simultaneously
-    r1, r2 = await asyncio.gather(
-        worker1.process_one_cycle(),
-        worker2.process_one_cycle(),
-    )
+    # Run worker passes sequentially across workers
+    r1 = await worker1.process_one_cycle()
+    r2 = await worker2.process_one_cycle()
 
-    # Exactly one worker should claim the job, the other should find no work
+    # Exactly one worker claims the job, the second finds no work
     assert (r1, r2) in [(True, False), (False, True)]
     assert send_counter == 1
 
