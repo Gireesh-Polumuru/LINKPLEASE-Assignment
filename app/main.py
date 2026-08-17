@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from app.api import rules_router, webhook_router
+from app.api import rules_router, stats_router, webhook_router
 from app.config import settings
 from app.database import init_db
 
@@ -34,6 +34,7 @@ app = FastAPI(
 # Mount API Routers
 app.include_router(rules_router)
 app.include_router(webhook_router)
+app.include_router(stats_router)
 
 
 
