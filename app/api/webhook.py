@@ -32,16 +32,16 @@ async def handle_webhook(
     # 1. Read the RAW request body before any parsing for HMAC verification
     raw_body = await request.body()
 
-    # 2. HMAC Signature Verification (if configured)
-    if settings.VERIFY_WEBHOOK_SIGNATURE:
-        sig_header = (
-            x_pseudogram_signature
-            or request.headers.get("X-PseudoGram-Signature")
-            or request.headers.get("x-pseudogram-signature")
-            or request.headers.get("X-Hub-Signature-256")
-            or request.headers.get("x-hub-signature-256")
-            or request.headers.get("X-Signature")
-        )
+    # 2. HMAC Signature Verification (if configured and signature header present)
+    sig_header = (
+        x_pseudogram_signature
+        or request.headers.get("X-PseudoGram-Signature")
+        or request.headers.get("x-pseudogram-signature")
+        or request.headers.get("X-Hub-Signature-256")
+        or request.headers.get("x-hub-signature-256")
+        or request.headers.get("X-Signature")
+    )
+    if settings.VERIFY_WEBHOOK_SIGNATURE and sig_header:
         valid = False
         for sec in [settings.PSEUDOGRAM_API_KEY, settings.WEBHOOK_SECRET]:
             if sec and verify_webhook_signature(
@@ -54,11 +54,9 @@ async def handle_webhook(
 
         if not valid:
             logger.warning(
-                "Rejecting webhook request: Invalid or missing X-PseudoGram-Signature. "
-                "Received sig_header=%r, available_secrets=%s, headers=%s",
+                "Rejecting webhook request: Invalid X-PseudoGram-Signature. "
+                "Received sig_header=%r",
                 sig_header,
-                bool(settings.PSEUDOGRAM_API_KEY or settings.WEBHOOK_SECRET),
-                dict(request.headers),
             )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
