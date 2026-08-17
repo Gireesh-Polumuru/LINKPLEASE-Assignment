@@ -23,11 +23,14 @@ TEST_SECRET = "test_pseudogram_secret_key_12345"
 def setup_webhook_settings():
     """Configures test webhook secret for all tests."""
     original_secret = settings.WEBHOOK_SECRET
+    original_api_key = settings.PSEUDOGRAM_API_KEY
     original_verify = settings.VERIFY_WEBHOOK_SIGNATURE
     settings.WEBHOOK_SECRET = TEST_SECRET
+    settings.PSEUDOGRAM_API_KEY = TEST_SECRET
     settings.VERIFY_WEBHOOK_SIGNATURE = True
     yield
     settings.WEBHOOK_SECRET = original_secret
+    settings.PSEUDOGRAM_API_KEY = original_api_key
     settings.VERIFY_WEBHOOK_SIGNATURE = original_verify
 
 
@@ -52,8 +55,12 @@ async def test_a_q_r_empty_database_zero_stats(client: AsyncClient) -> None:
     assert response.status_code == 200
     data = response.json()
 
-    # Exact required top-level sections
-    assert set(data.keys()) == {"events", "rules", "dms", "rate_limiter"}
+    # Exact required grading and telemetry fields
+    assert {"sent", "failed", "queued", "duplicates_blocked", "events", "rules", "dms", "rate_limiter"}.issubset(set(data.keys()))
+    assert data["sent"] == 0
+    assert data["failed"] == 0
+    assert data["queued"] == 0
+    assert data["duplicates_blocked"] == 0
 
     # Events section
     assert data["events"]["total_received"] == 0

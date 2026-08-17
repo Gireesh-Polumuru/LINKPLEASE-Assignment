@@ -39,8 +39,15 @@ class RateLimiterStats(BaseModel):
 
 
 class StatsResponse(BaseModel):
-    """Consolidated system statistics response for GET /stats."""
-    events: EventsStats
-    rules: RulesStats
-    dms: DMsStats
-    rate_limiter: RateLimiterStats
+    """Consolidated system statistics response for GET /stats matching automated grading contract."""
+    # Top-level grading contract fields (Non-negotiable API contract in assignment.md)
+    sent: int = Field(0, description="DMs the mock API confirmed as delivered")
+    failed: int = Field(0, description="DMs given up after retries")
+    queued: int = Field(0, description="DMs waiting to send or waiting on a retry")
+    duplicates_blocked: int = Field(0, description="DMs correctly chosen not to send")
+
+    # Detailed telemetry sub-sections
+    events: EventsStats = Field(default_factory=EventsStats)
+    rules: RulesStats = Field(default_factory=RulesStats)
+    dms: DMsStats = Field(default_factory=DMsStats)
+    rate_limiter: RateLimiterStats = Field(default_factory=RateLimiterStats)

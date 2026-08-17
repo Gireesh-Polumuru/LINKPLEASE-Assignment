@@ -30,11 +30,14 @@ TEST_SECRET = "test_simulation_secret_key_12345"
 def setup_webhook_settings():
     """Configures test webhook secret for simulation tests."""
     original_secret = settings.WEBHOOK_SECRET
+    original_api_key = settings.PSEUDOGRAM_API_KEY
     original_verify = settings.VERIFY_WEBHOOK_SIGNATURE
     settings.WEBHOOK_SECRET = TEST_SECRET
+    settings.PSEUDOGRAM_API_KEY = TEST_SECRET
     settings.VERIFY_WEBHOOK_SIGNATURE = True
     yield
     settings.WEBHOOK_SECRET = original_secret
+    settings.PSEUDOGRAM_API_KEY = original_api_key
     settings.VERIFY_WEBHOOK_SIGNATURE = original_verify
 
 

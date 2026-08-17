@@ -138,6 +138,10 @@ async def get_system_stats(db: AsyncSession) -> StatsResponse:
     )
 
     return StatsResponse(
+        sent=delivered_count,
+        failed=failed_count,
+        queued=queued_count,
+        duplicates_blocked=duplicate_executions_blocked,
         events=events_stats,
         rules=rules_stats,
         dms=dms_stats,
